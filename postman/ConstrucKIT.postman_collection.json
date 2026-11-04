@@ -1,0 +1,779 @@
+{
+  "info": {
+    "name": "ConstrucKIT API",
+    "description": "API de equipos, cargas de combustible y mantenciones (prueba técnica Loki Labs).\n\nUso:\n1. Ejecuta **Auth > Login** (usuario del seeder: demo@construckit.cl / password). El token se guarda solo en la variable `token`.\n2. Las demás peticiones usan ese token automáticamente (autenticación Bearer a nivel de colección).\n\n`equipment_id` = 1 apunta a CAM-101 del seeder. `new_equipment_id` se llena al ejecutar **Equipos > Crear equipo**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "equipment_id",
+      "value": "1"
+    },
+    {
+      "key": "new_equipment_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "Entrega un token Sanctum. El script de Tests lo guarda en la variable `token`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@construckit.cl\",\n  \"password\": \"password\",\n  \"device_name\": \"postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}",
+                  "pm.test('Login correcto (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            },
+            "description": "Devuelve el usuario dueño del token."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout"
+              ]
+            },
+            "description": "Revoca el token actual. Después de esto hay que volver a hacer login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token revocado (204)', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment"
+              ]
+            },
+            "description": "Ejemplo de error: sin token la API responde 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rechaza sin token (401)', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Equipos",
+      "item": [
+        {
+          "name": "Listar equipos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment?",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "operativo",
+                  "disabled": true,
+                  "description": "Filtro opcional: operativo, en_mantencion, fuera_de_servicio"
+                },
+                {
+                  "key": "type",
+                  "value": "camion",
+                  "disabled": true,
+                  "description": "Filtro opcional por tipo"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista paginada (15 por página). Filtros opcionales ?status= y ?type=."
+          }
+        },
+        {
+          "name": "Crear equipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment"
+              ]
+            },
+            "description": "Crea un equipo (201). El script guarda su id en `new_equipment_id`. Si lo ejecutas dos veces, el código duplicado devuelve 422.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CAM-102\",\n  \"type\": \"camion\",\n  \"plate\": \"LKJH45\",\n  \"brand\": \"Scania\",\n  \"model\": \"R450\",\n  \"current_hourmeter\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('new_equipment_id', pm.response.json().data.id);",
+                  "}",
+                  "pm.test('Equipo creado (201)', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{new_equipment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{new_equipment_id}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Editar estado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{new_equipment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{new_equipment_id}}"
+              ]
+            },
+            "description": "Edición parcial: se envían solo los campos que cambian.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"en_mantencion\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Editar horómetro (422)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{new_equipment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{new_equipment_id}}"
+              ]
+            },
+            "description": "Ejemplo de error: el horómetro no se edita directamente, lo actualizan las cargas y mantenciones.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_hourmeter\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear con datos inválidos (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment"
+              ]
+            },
+            "description": "Ejemplo de error de validación con mensajes en español.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar equipo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{new_equipment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{new_equipment_id}}"
+              ]
+            },
+            "description": "Soft delete (204): el equipo deja de aparecer, pero su historial se conserva."
+          }
+        },
+        {
+          "name": "Equipos que necesitan mantención preventiva",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/maintenance-due",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "maintenance-due"
+              ]
+            },
+            "description": "Equipos con más de 250 h desde su última preventiva (o desde 0 si nunca tuvieron), del más urgente al menos urgente."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cargas de combustible",
+      "item": [
+        {
+          "name": "Listar cargas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/fuel-loads",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "fuel-loads"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Registrar carga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/fuel-loads",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "fuel-loads"
+              ]
+            },
+            "description": "Si el horómetro es mayor al actual del equipo, lo actualiza. Si es igual, se acepta sin cambios.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loaded_at\": \"2026-11-04 08:00:00\",\n  \"liters\": 95.5,\n  \"amount_clp\": 105050,\n  \"hourmeter\": 1300\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registrar carga con horómetro menor (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/fuel-loads",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "fuel-loads"
+              ]
+            },
+            "description": "Ejemplo de error: un horómetro menor al último registrado se rechaza.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loaded_at\": \"2026-11-04 09:00:00\",\n  \"liters\": 50,\n  \"amount_clp\": 55000,\n  \"hourmeter\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mantenciones",
+      "item": [
+        {
+          "name": "Listar mantenciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/maintenances",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "maintenances"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Registrar mantención preventiva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/maintenances",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "maintenances"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"preventiva\",\n  \"performed_on\": \"2026-11-04\",\n  \"hourmeter\": 1320,\n  \"cost_clp\": 350000,\n  \"description\": \"Cambio de aceite y filtros\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registrar mantención correctiva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/maintenances",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "maintenances"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"correctiva\",\n  \"performed_on\": \"2026-11-04\",\n  \"hourmeter\": 1320,\n  \"cost_clp\": 120000,\n  \"description\": \"Reparación de frenos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Reporte por rango de fechas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/report?from=2026-10-01&to=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "report"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-10-31"
+                }
+              ]
+            },
+            "description": "Litros totales, gasto en combustible y en mantenciones, y rendimiento en L/h. Con el seeder, CAM-101 en octubre da 2,3 L/h."
+          }
+        },
+        {
+          "name": "Reporte con rango invertido (422)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/equipment/{{equipment_id}}/report?from=2026-10-31&to=2026-10-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipment_id}}",
+                "report"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-10-31"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-10-01"
+                }
+              ]
+            },
+            "description": "Ejemplo de error: la fecha de término no puede ser anterior a la de inicio."
+          }
+        }
+      ]
+    }
+  ]
+}
