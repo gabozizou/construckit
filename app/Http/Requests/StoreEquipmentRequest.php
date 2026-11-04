@@ -3,21 +3,11 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreEquipmentRequest extends FormRequest
+class StoreEquipmentRequest extends ApiRequest
 {
     public const STATUSES = ['operativo', 'en_mantencion', 'fuera_de_servicio'];
-
-    /**
-     * Determine if the user is authorized to make this request.
-     * El acceso se controla con Sanctum a nivel de ruta.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -38,19 +28,14 @@ class StoreEquipmentRequest extends FormRequest
     }
 
     /**
-     * Mensajes de error en español.
+     * Mensajes propios de equipos (los genéricos vienen de ApiRequest).
      */
     public function messages(): array
     {
-        return [
-            'required' => 'El campo :attribute es obligatorio.',
-            'string' => 'El campo :attribute debe ser texto.',
-            'max' => 'El campo :attribute no puede superar :max.',
-            'min' => 'El campo :attribute no puede ser menor a :min.',
-            'numeric' => 'El campo :attribute debe ser un número.',
+        return array_merge(parent::messages(), [
             'unique' => 'Ya existe un equipo con ese :attribute.',
-            'in' => 'El :attribute no es válido. Valores permitidos: ' . implode(', ', self::STATUSES) . '.',
-        ];
+            'status.in' => 'El estado no es válido. Valores permitidos: ' . implode(', ', self::STATUSES) . '.',
+        ]);
     }
 
     /**
