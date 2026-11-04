@@ -16,10 +16,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
-
+        // Usuario de prueba para token en POST /api/login.
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Supervisor Demo',
+            'email' => 'demo@construckit.cl',
+            'password' => 'password',
         ]);
+
+        $this->call(EquipmentSeeder::class);
     }
 }
