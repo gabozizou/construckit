@@ -105,6 +105,11 @@
                 <div class="value" id="liters-per-hour"></div>
                 <div class="detail" id="hours-used"></div>
             </div>
+            <div class="stat">
+                <div class="label">Gasto total por hora</div>
+                <div class="value" id="cost-per-hour"></div>
+                <div class="detail" id="total-cost"></div>
+            </div>
         </div>
         <p id="performance-note" class="note hidden"></p>
     </section>
@@ -160,11 +165,11 @@
         showError($('login-error'), message);
     }
 
-    // Por defecto se propone el mes anterior completo (con el seeder: octubre de 2026).
+    // Por defecto se propone el mes actual completo.
     function setDefaultDates() {
         const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         const iso = (d) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
         $('from').value = iso(firstDay);
         $('to').value = iso(lastDay);
@@ -196,6 +201,15 @@
             $('logout').classList.remove('hidden');
             setDefaultDates();
             await loadEquipment();
+
+            const costPerHour = report.cost_per_hour || {};
+                $('cost-per-hour').textContent = costPerHour.cost_per_hour_clp == null
+                    ? '—'
+                    : clp.format(costPerHour.cost_per_hour_clp) + ' /h';
+                $('total-cost').textContent = costPerHour.total_cost_clp == null
+                    ? ''
+                    : 'Total ' + clp.format(costPerHour.total_cost_clp);
+
         } catch (error) {
             showError($('login-error'), error.message);
         }
@@ -220,6 +234,7 @@
     });
 
     // Pinta el reporte. Se usa textContent (no innerHTML) para no interpretar datos como HTML.
+    // Pinta el reporte. Se usa textContent (no innerHTML) para no interpretar datos como HTML.
     function renderReport(report) {
         $('result-title').textContent = `${report.equipment.code} · ${report.period.from} al ${report.period.to}`;
         $('total-liters').textContent = number.format(report.fuel.total_liters) + ' L';
@@ -228,6 +243,7 @@
         $('maintenance-cost').textContent = clp.format(report.maintenance.total_cost_clp);
         $('maintenance-count').textContent = `${report.maintenance.count} mantención(es)`;
 
+        // Rendimiento en litros por hora
         const performance = report.performance;
         $('liters-per-hour').textContent = performance.liters_per_hour === null
             ? '—'
@@ -236,6 +252,15 @@
             ? ''
             : `${number.format(performance.hours_used)} h de uso`;
         showError($('performance-note'), performance.note || '');
+
+        // Gasto total por hora de uso
+        const costPerHour = report.cost_per_hour || {};
+        $('cost-per-hour').textContent = costPerHour.cost_per_hour_clp == null
+            ? '—'
+            : clp.format(costPerHour.cost_per_hour_clp) + ' /h';
+        $('total-cost').textContent = costPerHour.total_cost_clp == null
+            ? ''
+            : 'Total ' + clp.format(costPerHour.total_cost_clp);
 
         $('result-card').classList.remove('hidden');
     }
