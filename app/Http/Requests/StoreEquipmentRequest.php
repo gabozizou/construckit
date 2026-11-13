@@ -19,7 +19,7 @@ class StoreEquipmentRequest extends ApiRequest
         return [
             'code' => ['required', 'string', 'max:50', 'unique:equipment,code'],
             'type' => ['required', 'string', 'max:50'],
-            'plate' => ['nullable', 'string', 'max:20'],
+            'plate' => ['nullable', 'string', 'max:20', 'unique:equipment,plate'],
             'brand' => ['required', 'string', 'max:100'],
             'model' => ['required', 'string', 'max:100'],
             'current_hourmeter' => ['sometimes', 'numeric', 'min:0', 'max:999999999.9'],
@@ -35,6 +35,7 @@ class StoreEquipmentRequest extends ApiRequest
         return array_merge(parent::messages(), [
             'unique' => 'Ya existe un equipo con ese :attribute.',
             'status.in' => 'El estado no es válido. Valores permitidos: ' . implode(', ', self::STATUSES) . '.',
+            'plate.unique' => 'Ya existe un equipo con esa patente.',
         ]);
     }
 

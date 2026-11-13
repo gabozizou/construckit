@@ -36,6 +36,8 @@ class EquipmentReportService
             ->selectRaw('COALESCE(SUM(cost_clp), 0) AS total_cost')
             ->first();
 
+        $performance = $this->performance($fuel, $firstLoadLiters);
+        
         return [
             'equipment' => [
                 'id' => $equipment->id,
@@ -54,7 +56,20 @@ class EquipmentReportService
                 'count' => (int) $maintenance->maintenance_count,
                 'total_cost_clp' => (int) $maintenance->total_cost,
             ],
-            'performance' => $this->performance($fuel, $firstLoadLiters),
+            'performance' => $performance,
+            'cost_per_hour' => $this->costPerHour($fuel, $maintenance, $performance['hours_used'])
+        ];
+    }
+
+    // El operador quiere saber cuanto le cuesta cada hora de un uso de un equipo
+    // Agrega al reporte un campo con el gasto total (combustible + mantenciones) dividido por las horas de uso
+    private function costPerHour(object $fuel, object $maintenance, ?float $hoursUsed): array
+    {
+        $totalCost = (int) $fuel->total_cost + (int) $maintenance->total_cost;
+        return [
+            'total_cost_clp' => $totalCost,
+            'hours_used' => $hoursUsed,
+            'cost_per_hour_clp' => $hoursUsed > 0 ? (int) round($totalCost / $hoursUsed) : null,
         ];
     }
 
